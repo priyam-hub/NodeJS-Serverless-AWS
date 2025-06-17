@@ -1,0 +1,62 @@
+service: dynamodb-crud-api
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: ap-south-1
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:PutItem"
+        - "dynamodb:GetItem"
+        - "dynamodb:UpdateItem"
+        - "dynamodb:Scan"
+        - "dynamodb:DeleteItem"
+      Resource: "arn:aws:dynamodb:ap-south-1:*:table/Users"
+
+functions:
+  createUser:
+    handler: handler.createUser
+    events:
+      - http:
+          path: create-user
+          method: post
+          cors: true
+
+  getUsers:
+    handler: handler.getUsers
+    events:
+      - http:
+          path: get-users
+          method: get
+          cors: true
+
+  updateUser:
+    handler: handler.updateUser
+    events:
+      - http:
+          path: update-user/{id}
+          method: put
+          cors: true
+
+  deleteUser:
+    handler: handler.deleteUser
+    events:
+      - http:
+          path: delete-user/{id}
+          method: delete
+          cors: true
+
+resources:
+  Resources:
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: Users
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
