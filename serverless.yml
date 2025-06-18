@@ -12,11 +12,15 @@ provider:
         - "dynamodb:UpdateItem"
         - "dynamodb:Scan"
         - "dynamodb:DeleteItem"
-      Resource: "arn:aws:dynamodb:ap-south-1:*:table/Users"
+        - "dynamodb:Query"
+      Resource: 
+        - "arn:aws:dynamodb:ap-south-1:*:table/Users"
+        - "arn:aws:dynamodb:ap-south-1:*:table/Users/index/NameIndex"
 
 functions:
   createUser:
-    handler: handler.createUser
+    handler: api/create_user.createUser
+    description: Create a new user in the DynamoDB table.
     events:
       - http:
           path: create-user
@@ -24,7 +28,8 @@ functions:
           cors: true
 
   getUsers:
-    handler: handler.getUsers
+    handler: api/read_user.getUsers
+    description: Retrieve all users from the DynamoDB table.
     events:
       - http:
           path: get-users
@@ -32,7 +37,8 @@ functions:
           cors: true
 
   updateUser:
-    handler: handler.updateUser
+    handler: api/update_user.updateUser
+    description: Update an existing user in the DynamoDB table.
     events:
       - http:
           path: update-user/{id}
@@ -40,11 +46,57 @@ functions:
           cors: true
 
   deleteUser:
-    handler: handler.deleteUser
+    handler: api/delete_user.deleteUser
+    description: Delete a user from the DynamoDB table.
     events:
       - http:
           path: delete-user/{id}
           method: delete
+          cors: true
+
+  sortUsers:
+    handler: api/sort_user.sortUsers
+    description: Sort users by name in ascending order.
+    events:
+      - http:
+          path: sort-users
+          method: get
+          cors: true
+
+  queryUsersByName:
+    handler: api/query_user.queryUsersByName
+    description: Query users by name using a Global Secondary Index.
+    events:
+      - http:
+          path: query-users-by-name
+          method: get
+          cors: true
+
+  paginateUsers:
+    handler: api/paginate_user.paginateUsers
+    description: Paginate through users in the DynamoDB table.
+    events:
+      - http:
+          path: paginate-users
+          method: get
+          cors: true
+
+  paginateAndSortUsers:
+    handler: api/paginate_user.paginateAndSortUsers
+    description: Paginate and sort users by name in ascending order.
+    events:
+      - http:
+          path: paginate-and-sort-users
+          method: get
+          cors: true
+
+  softDeleteUser:
+    handler: api/soft_delete_user.softDeleteUser
+    description: Soft delete a user (set isDeleted=true)
+    events:
+      - http:
+          path: soft-delete-user/{id}
+          method: put
           cors: true
 
 resources:
@@ -56,7 +108,18 @@ resources:
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
+          - AttributeName: name
+            AttributeType: S
         KeySchema:
           - AttributeName: id
             KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: NameIndex
+            KeySchema:
+              - AttributeName: name
+                KeyType: HASH
+              - AttributeName: id
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
         BillingMode: PAY_PER_REQUEST
